@@ -6,9 +6,6 @@
   imports = [
     ./hardware-configuration.nix
   ];
-  
-  # Enable Nix Flakes
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # Use the extlinux boot loader. (NixOS wants to enable GRUB by default)
   boot.loader.grub.enable = false;
