@@ -1,0 +1,101 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "docker@latest": {
+      "last_modified": "2025-01-25T23:17:58Z",
+      "resolved": "github:NixOS/nixpkgs/b582bb5b0d7af253b05d58314b85ab8ec46b8d19#docker",
+      "source": "devbox-search",
+      "version": "27.5.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bav9fyspzl9i9fx6nykb7jqdmr5qwvfz-docker-27.5.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/bav9fyspzl9i9fx6nykb7jqdmr5qwvfz-docker-27.5.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/v3avgyz1ybih0ai2rhhp8gchxvb4q3yz-docker-27.5.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/v3avgyz1ybih0ai2rhhp8gchxvb4q3yz-docker-27.5.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/n966jsfz86wpgddnlc9xniix9zv1vha9-docker-27.5.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/n966jsfz86wpgddnlc9xniix9zv1vha9-docker-27.5.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/s9g8d3q5l89mp1nqypn1fy7w6amiha88-docker-27.5.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/s9g8d3q5l89mp1nqypn1fy7w6amiha88-docker-27.5.0"
+        }
+      }
+    },
+    "mkpasswd@latest": {
+      "last_modified": "2025-01-25T23:17:58Z",
+      "resolved": "github:NixOS/nixpkgs/b582bb5b0d7af253b05d58314b85ab8ec46b8d19#mkpasswd",
+      "source": "devbox-search",
+      "version": "5.5.23",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/l9hy9ayrzhxiw5s0kdnyh66ka2khnrvx-mkpasswd-5.5.23",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/l9hy9ayrzhxiw5s0kdnyh66ka2khnrvx-mkpasswd-5.5.23"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/9zb9cgp35vh53fxxyrzkjp3k1611xa3g-mkpasswd-5.5.23",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/9zb9cgp35vh53fxxyrzkjp3k1611xa3g-mkpasswd-5.5.23"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7f0mc27m7q23m9g4jslgy8dl247lrgip-mkpasswd-5.5.23",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7f0mc27m7q23m9g4jslgy8dl247lrgip-mkpasswd-5.5.23"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1p4w1wppj41693fhri790xhrgvqh6x2r-mkpasswd-5.5.23",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/1p4w1wppj41693fhri790xhrgvqh6x2r-mkpasswd-5.5.23"
+        }
+      }
+    }
+  }
+}
