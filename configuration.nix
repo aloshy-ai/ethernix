@@ -33,7 +33,7 @@
   # the user account on the machine
   users.users.aloshy = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" ]; # Enable 'sudo' for the user.
     hashedPassword = "$6$OF89tQYOvaEHKCfx$KYSdQu/GHroUMovkUKUqbvUpEM51MurUpLob6E9YiEMWxvABDsrfACQxej02f9xuV5.HnNtMmpEoLDeAqCZfB1"; # generate with `mkpasswd`
   };
 
@@ -47,7 +47,7 @@
   ];
 
   # allows the use of flakes
-  nix.package = pkgs.nixFlakes;
+  nix.package = pkgs.nixVersions.stable;
   nix.extraOptions = ''
     keep-outputs = true
     keep-derivations = true
