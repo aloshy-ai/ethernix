@@ -2,16 +2,22 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.7/.schema/devbox.schema.json",
   "packages": [
     "docker@latest",
-    "mkpasswd@latest"
+    "mkpasswd@latest",
+    "act"
   ],
   "shell": {
     "init_hook": [
       "echo 'Welcome to devbox!' > /dev/null"
     ],
     "scripts": {
-      "test": [
-        "echo \"Error: no test specified\" && exit 1"
+      "build": [
+        "docker build --no-cache -t ethernix-builder .",
+        "docker run --rm -it -v \"$(pwd):/build\" --platform linux/arm64 ethernix-builder sh -c \"mkdir -p out && ./build.sh && unzstd -d $(readlink -f ethernix.sd)/sd-image/nixos-image-sd-card-*.img.zst -o out/ethernix.img && chown -R $(id -u):$(id -g) out\""
+      ],
+      "act": [
+        "act push -P self-hosted=catthehacker/ubuntu:act-latest --container-architecture linux/amd64"
       ]
     }
   }
 }
+

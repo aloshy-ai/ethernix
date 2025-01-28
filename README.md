@@ -23,16 +23,16 @@ devbox shell
 Use `passwdgen.sh` to generate a hashed password and replace it in `configuration.nix`.
 Additionally, you can modify the username and hostname in `configuration.nix`.
 
-### Building the Builder
+### Building the IMG File
 
 ```bash
-docker build --no-cache -t ethernix-builder .
+devbox run build
 ```
 
-### Running the Builder
+The output file will be in the `out` directory.
 
-```bash
-docker run --rm -it -v "$(pwd):/build" --platform linux/arm64 ethernix-builder sh -c "./build.sh"
-```
+
+
+
 
 

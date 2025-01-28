@@ -2,7 +2,7 @@ FROM nixos/nix
 
 # Install git which is needed for flakes
 RUN nix-channel --update && \
-    nix-env -iA nixpkgs.git nixpkgs.busybox
+    nix-env -iA nixpkgs.git nixpkgs.busybox nixpkgs.zstd
 
 # Enable flakes
 RUN mkdir -p ~/.config/nix && \
