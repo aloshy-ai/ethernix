@@ -83,13 +83,45 @@ A NixOS image builder for Raspberry Pi 4.
 2. Connect ethernet cable
 3. Power on the device
 4. Connect via SSH:
+
    ```bash
-   ssh admin@192.168.8.69
+   ssh aloshy@192.168.8.69
+   ```
+
+5. Generate NixOS configuration:
+
+   ```bash
+   sudo nixos-generate-config
+   ```
+
+6. Update Nix Channel:
+
+   ```bash
+   sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+   sudo nix-channel --update
+   ```
+
+7. Copy the configuration file:
+
+   On your local machine:
+   ```bash
+   scp configuration.nix aloshy@192.168.8.69:/tmp/configuration.nix
+   ```
+
+   On the Raspberry Pi:
+   ```bash
+   sudo mv /tmp/configuration.nix /etc/nixos/configuration.nix
+   ```
+
+8. Apply the configuration:
+
+   ```bash
+   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
    ```
 
 ## Default Configuration
 
-- Username: `admin`
+- Username: `aloshy`
 - IP Address: `192.168.8.69`
 - SSH: Enabled
 - Included packages: vim, wget, and other basic utilities
