@@ -1,38 +1,115 @@
 # ETHERNIX
 
-EtherNix is a NixOS Image builder for Raspberry Pi 4.
+[![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/contributor-quickstart/)
+[![CI](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml/badge.svg)](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml)
 
-## Getting Started
+A NixOS image builder for Raspberry Pi 4.
 
-### Prerequisites
+## Features
 
-- Devbox: Install [Devbox](https://www.jetify.com/docs/devbox/installing_devbox) for your OS.
-- Docker Daemon: Docker Desktop or Colima running in the background with at least 8GB of RAM and 4 CPUs.
-- Executable permission for the `build.sh` and `passwdgen.sh` scripts.
+- Custom NixOS configuration for Raspberry Pi 4
+- Automated build process using Devbox
+- Pre-configured network settings
+- SSH enabled by default
+- Basic system tools included
 
-### Enter the Devbox Shell
+## Prerequisites
 
-```bash
-devbox shell
-```
+- [Devbox](https://www.jetify.com/docs/devbox/installing_devbox)
+- Docker Desktop or Colima (8GB RAM, 4 CPUs minimum)
+- SD Card (8GB minimum)
+- SD Card reader/writer
 
-> If you're already using `direnv`, and have it's hook added to your shell, you'll need to run `direnv allow` to allow the devbox environment to be activated automatically as you enter the directory.
+## Installation
 
-### Configuration
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/aloshy-ai/ethernix.git
+   cd ethernix
+   ```
 
-Use `passwdgen.sh` to generate a hashed password and replace it in `configuration.nix`.
-Additionally, you can modify the username and hostname in `configuration.nix`.
+2. Enter the Devbox shell:
+   ```bash
+   devbox shell
+   ```
+   > **Note**: If using `direnv`, run `direnv allow` to activate the environment automatically.
 
-### Building the IMG File
+3. Generate a password hash:
+   ```bash
+   ./passwdgen.sh
+   ```
 
-```bash
-devbox run build
-```
+4. Update the configuration:
+   ```nix
+   users.users.admin = {
+     isNormalUser = true;
+     extraGroups = [ "wheel" ];
+     hashedPassword = "your-generated-hash-here";
+   };
+   ```
 
-The output file will be in the `out` directory.
+5. Build the image:
+   ```bash
+   devbox run build
+   ```
 
+## Writing to SD Card
 
+1. List available disks:
+   ```bash
+   diskutil list
+   ```
 
+2. Unmount the target disk:
+   ```bash
+   sudo diskutil unmountDisk /dev/diskN
+   ```
 
+3. Write the image:
+   ```bash
+   sudo dd if=out/ethernix.img of=/dev/diskN bs=1M status=progress
+   ```
+   > ⚠️ **Warning**: Verify the disk identifier carefully to avoid data loss.
 
+4. Finalize:
+   ```bash
+   sudo sync
+   sudo diskutil eject /dev/diskN
+   ```
 
+## Usage
+
+1. Insert SD card into Raspberry Pi 4
+2. Connect ethernet cable
+3. Power on the device
+4. Connect via SSH:
+   ```bash
+   ssh admin@192.168.8.69
+   ```
+
+## Default Configuration
+
+- Username: `admin`
+- IP Address: `192.168.8.69`
+- SSH: Enabled
+- Included packages: vim, wget, and other basic utilities
+
+## Customization
+
+Edit `configuration.nix` to modify:
+- Username
+- Hostname
+- Network settings
+- Package selection
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

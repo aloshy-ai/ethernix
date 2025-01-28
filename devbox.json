@@ -16,6 +16,10 @@
       ],
       "act": [
         "act push -P self-hosted=catthehacker/ubuntu:act-latest --container-architecture linux/amd64"
+      ],
+      "runner": [
+        "chmod +x actions-runner/run.sh",
+        "actions-runner/run.sh"
       ]
     }
   }
