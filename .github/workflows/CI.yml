@@ -14,12 +14,23 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Maximize build space
+        uses: AdityaGarg8/remove-unwanted-software@v4
+        with:
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+          remove-large-packages: 'true'
+          remove-cached-tools: 'true'
+
       - uses: actions/checkout@v4
 
       - name: Install Nix
         uses: cachix/install-nix-action@v25
         with:
-          nix_path: nixpkgs=https://nixpkgs.cachix.org
+          nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             experimental-features = nix-command flakes
 
@@ -30,30 +41,25 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
 
-      - name: Install nixos-rebuild
-        run: nix profile install nixpkgs#nixos-rebuild
-
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
           echo "Host *" > ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
-      - name: Verify Remote Host Accessibility
+      - name: Build and Deploy
         env:
           ETHERNIX: ${{ vars.ETHERNIX }}
         run: |
-          timeout 30s bash -c 'until ssh -q aloshy@$ETHERNIX exit; do sleep 2; done'
-
-      - name: Rebuild NixOS
-        env:
-          ETHERNIX: ${{ vars.ETHERNIX }}
-        run: |
+          # First build locally to catch any errors
+          nix build .#nixosConfigurations.ethernix.config.system.build.toplevel
+          
+          # Then deploy if build succeeds
           nixos-rebuild switch \
             --flake .#ethernix \
             --target-host "aloshy@$ETHERNIX" \
