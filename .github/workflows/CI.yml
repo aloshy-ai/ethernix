@@ -70,8 +70,8 @@ jobs:
             --option extra-platforms aarch64-linux \
             --option system-features kvm
 
-          # Then deploy if build succeeds
-          nixos-rebuild switch \
+          # Then deploy if build succeeds - using nix run instead of nixos-rebuild
+          nix run nixpkgs#nixos-rebuild -- switch \
             --flake .#ethernix \
             --target-host "aloshy@$ETHERNIX" \
             --use-remote-sudo \
