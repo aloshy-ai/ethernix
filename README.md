@@ -88,17 +88,18 @@ A NixOS image builder for Raspberry Pi 4.
    ssh aloshy@192.168.8.69
    ```
 
-5. Generate NixOS configuration:
-
-   ```bash
-   sudo nixos-generate-config
-   ```
-
-6. Update Nix Channel:
+5. Update Nix Channel:
 
    ```bash
    sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+   sudo nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
    sudo nix-channel --update
+   ```
+
+6. Generate NixOS configuration:
+
+   ```bash
+   sudo nixos-generate-config
    ```
 
 7. Copy the configuration file:
