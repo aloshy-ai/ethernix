@@ -1,7 +1,10 @@
-name: Build and Deploy NixOS
+name: Build & Deploy NixOS
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
 
@@ -12,9 +15,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    outputs:
-      image-path: ${{ steps.find-image.outputs.image-path }}
-
     steps:
       - name: Maximize build space
         uses: AdityaGarg8/remove-unwanted-software@v4
@@ -43,10 +43,13 @@ jobs:
             extra-platforms = aarch64-linux
             trusted-users = root runner
 
-      - name: Install zstd
-        run: sudo apt-get update && sudo apt-get install -y zstd
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: your-cache-name  # Replace with your Cachix cache name
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - name: Build NixOS
+      - name: Build
         run: |
           nix build .#nixosConfigurations.ethernix.config.system.build.toplevel \
             --impure \
@@ -54,27 +57,14 @@ jobs:
             --option extra-platforms aarch64-linux \
             --option system-features kvm
 
-      - name: Find and extract image
-        id: find-image
+      - name: Push to Cachix
         run: |
-          mkdir -p out
-          IMAGE_PATH=$(find /nix/store -name 'nixos-image-sd-card-*.img.zst' -print -quit)
-          echo "image-path=${IMAGE_PATH}" >> "$GITHUB_OUTPUT"
-          unzstd -d "${IMAGE_PATH}" -o out/ethernix.img
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nixos-image
-          path: out/ethernix.img
-          retention-days: 5
+          cachix push your-cache-name ./result
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: production
-
     steps:
       - uses: actions/checkout@v4
 
@@ -93,11 +83,17 @@ jobs:
           tags: tag:ci
 
       - name: Configure SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "Host *" > ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
-      - name: Deploy to NixOS
+      - name: Deploy
         env:
           ETHERNIX: ${{ vars.ETHERNIX }}
         run: |
