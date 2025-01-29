@@ -39,7 +39,7 @@ jobs:
           
           # Connect to Tailscale
           sudo $(which tailscale) up --authkey "$TAILSCALE_AUTHKEY"
-          timeout 30s bash -c 'until sudo $(which tailscale) status | grep -q "Connected"; do sleep 2; done'
+          timeout 60s bash -c 'until sudo $(which tailscale) status | grep -q "Connected"; do sleep 2; done'
 
       - name: Install nixos-rebuild
         run: nix profile install nixpkgs#nixos-rebuild
