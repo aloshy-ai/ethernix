@@ -102,22 +102,26 @@ A NixOS image builder for Raspberry Pi 4.
    sudo nixos-generate-config
    ```
 
-7. Copy the configuration file:
+7. Copy `flake.nix` and `configuration.nix` to the Raspberry Pi:
 
-   On your local machine:
+   a. On your local machine:
+
    ```bash
+   scp flake.nix aloshy@192.168.8.69:/tmp/flake.nix
    scp configuration.nix aloshy@192.168.8.69:/tmp/configuration.nix
    ```
 
-   On the Raspberry Pi:
+   b. On the Raspberry Pi:
+
    ```bash
+   sudo mv /tmp/flake.nix /etc/nixos/flake.nix
    sudo mv /tmp/configuration.nix /etc/nixos/configuration.nix
    ```
 
 8. Apply the configuration:
 
    ```bash
-   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/configuration.nix
+   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/flake.nix
    ```
 
 ## Default Configuration

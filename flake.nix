@@ -1,5 +1,3 @@
-# flake.nix
-
 {
   description = "ETHERNIX";
 
@@ -12,12 +10,13 @@
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs: rec {
-  
-    # here goes the other flake outputs, if you have any
 
     nixosConfigurations."ethernix" = nixpkgs.lib.nixosSystem {
       system = "aarch64-linux";
       modules = [
+        ({ config, pkgs, ... }: {
+          nixpkgs.config.allowUnsupportedSystem = true;
+        })
         ./configuration.nix
         home-manager.nixosModules.home-manager
         {

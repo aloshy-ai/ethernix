@@ -56,14 +56,12 @@ jobs:
         env:
           ETHERNIX: ${{ vars.ETHERNIX }}
         run: |
-          # Add required channels to NIX_PATH
-          nix-channel --add https://nixos.org/channels/nixos-unstable nixos
-          nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
-          nix-channel --update
-          export NIX_PATH=$HOME/.nix-defexpr/channels:/nix/var/nix/profiles/per-user/root/channels${NIX_PATH:+:$NIX_PATH}
-          
-          # First build locally to catch any errors
-          nix build .#nixosConfigurations.ethernix.config.system.build.toplevel --impure
+          # Build locally to catch any errors
+          nix build .#nixosConfigurations.ethernix.config.system.build.toplevel \
+            --impure \
+            --option system-features kvm \
+            --system aarch64-linux \
+            --extra-platforms aarch64-linux
           
           # Then deploy if build succeeds
           nixos-rebuild switch \
