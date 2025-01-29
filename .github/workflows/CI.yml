@@ -27,7 +27,7 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Install Tailscale
-        run: nix-env -iA nixpkgs.tailscale
+        run: nix profile install nixpkgs#tailscale
 
       - name: Connect to Tailscale
         env:
@@ -37,7 +37,7 @@ jobs:
           timeout 30s bash -c 'until sudo tailscale status | grep -q "Connected"; do sleep 2; done'
 
       - name: Install nixos-rebuild
-        run: nix-env -iA nixpkgs.nixos-rebuild
+        run: nix profile install nixpkgs#nixos-rebuild
 
       - name: Configure SSH
         env:
