@@ -107,8 +107,8 @@ A NixOS image builder for Raspberry Pi 4.
    a. On your local machine:
 
    ```bash
-   scp flake.nix aloshy@192.168.8.69:/tmp/flake.nix
-   scp configuration.nix aloshy@192.168.8.69:/tmp/configuration.nix
+   scp -i ~/.ssh/id_ed25519 flake.nix aloshy@192.168.8.69:/tmp/flake.nix
+   scp -i ~/.ssh/id_ed25519 configuration.nix aloshy@192.168.8.69:/tmp/configuration.nix
    ```
 
    b. On the Raspberry Pi:
