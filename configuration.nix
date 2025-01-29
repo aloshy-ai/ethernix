@@ -1,5 +1,3 @@
-# configuration.nix
-
 { pkgs, ... }:
 
 {

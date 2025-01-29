@@ -1,36 +1,67 @@
-name: Build and Release IMG
+name: Rebuild NixOS
 
-on: push
+on:
+  push:
+    branches:
+      - main  # or your default branch
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+permissions:
+  contents: read
 
 jobs:
-  build-release:
-    runs-on: self-hosted
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Install devbox
-        uses: jetify-com/devbox-install-action@v0.12.0
-
-      - name: Build IMG file
-        run: devbox run build
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
         with:
-          tag_name: release-${{ github.sha }}
-          release_name: Release ${{ github.sha }}
-          draft: false
-          prerelease: false
+          nix_path: nixpkgs=https://nixpkgs.cachix.org
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
-      - name: Upload IMG file
-        uses: actions/upload-release-asset@v1
+      - name: Install Tailscale
+        run: nix-env -iA nixpkgs.tailscale
+
+      - name: Connect to Tailscale
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./out/ethernix.img
-          asset_name: ethernix.img
-          asset_content_type: application/octet-stream
+          TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_TOKEN }}
+        run: |
+          sudo tailscale up --authkey "$TAILSCALE_AUTHKEY"
+          timeout 30s bash -c 'until sudo tailscale status | grep -q "Connected"; do sleep 2; done'
+
+      - name: Install nixos-rebuild
+        run: nix-env -iA nixpkgs.nixos-rebuild
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "Host *" > ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+
+      - name: Verify Remote Host Accessibility
+        env:
+          ETHERNIX: ${{ vars.ETHERNIX }}
+        run: |
+          timeout 30s bash -c 'until ssh -q aloshy@$ETHERNIX exit; do sleep 2; done'
+
+      - name: Rebuild NixOS
+        env:
+          ETHERNIX: ${{ vars.ETHERNIX }}
+        run: |
+          nixos-rebuild switch \
+            --flake .#ethernix \
+            --target-host "aloshy@$ETHERNIX" \
+            --use-remote-sudo \
+            --show-trace
