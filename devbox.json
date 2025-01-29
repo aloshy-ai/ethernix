@@ -7,7 +7,7 @@
   ],
   "shell": {
     "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
+      "echo -e 'Available commands:\n\u001b[32mdevbox run build\u001b[0m: For building the image locally\n\u001b[32mdevbox run test\u001b[0m: For dry-running the CI workflow'"
     ],
     "scripts": {
       "build": [

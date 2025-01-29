@@ -5,3 +5,6 @@ actions-runner
 !.envrc
 !.env.example
 DS_Store
+*.img
+*.img.zst
+*.sd
