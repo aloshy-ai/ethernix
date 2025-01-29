@@ -47,6 +47,16 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
+          version: 1.60.0  # Specify a version explicitly
+        id: tailscale
+
+      - name: Wait for Tailscale
+        run: |
+          echo "Waiting for Tailscale to be ready..."
+          sleep 10  # Give Tailscale some time to establish connection
+          tailscale status
+          echo "Testing connectivity..."
+          ping -c 4 ${{ vars.ETHERNIX }}
 
       - name: Configure SSH
         env:
@@ -55,7 +65,9 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          echo "Host *" > ~/.ssh/config
+          echo "Host ethernix.tamarin-sunfish.ts.net" > ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/id_ed25519" >> ~/.ssh/config
+          echo "  User aloshy" >> ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
 
@@ -70,7 +82,10 @@ jobs:
             --option extra-platforms aarch64-linux \
             --option system-features kvm
 
-          # Then deploy if build succeeds - using nix run instead of nixos-rebuild
+          echo "Testing SSH connection before deploy..."
+          ssh -v -i ~/.ssh/id_ed25519 aloshy@$ETHERNIX "echo 'SSH connection successful'"
+
+          # Then deploy if build succeeds
           nix run nixpkgs#nixos-rebuild -- switch \
             --flake .#ethernix \
             --target-host "aloshy@$ETHERNIX" \
