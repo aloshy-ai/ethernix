@@ -59,7 +59,7 @@ jobs:
 
       - name: Push to Cachix
         run: |
-          cachix push your-cache-name ./result
+          cachix push ethernix ./result
 
   deploy:
     needs: build
