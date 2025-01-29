@@ -56,8 +56,10 @@ jobs:
         env:
           ETHERNIX: ${{ vars.ETHERNIX }}
         run: |
-          # Add home-manager input
-          nix registry add home-manager github:nix-community/home-manager
+          # Add required channels to NIX_PATH
+          nix-channel --add https://nixos.org/channels/nixos-unstable nixos
+          nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+          nix-channel --update
           
           # First build locally to catch any errors
           nix build .#nixosConfigurations.ethernix.config.system.build.toplevel --impure
