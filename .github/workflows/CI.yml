@@ -27,14 +27,17 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Install Tailscale
-        run: nix profile install nixpkgs#tailscale
+        run: |
+          nix profile install nixpkgs#tailscale
+          # Add nix profile binaries to PATH
+          echo "$HOME/.nix-profile/bin" >> $GITHUB_PATH
 
       - name: Connect to Tailscale
         env:
           TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_TOKEN }}
         run: |
-          sudo tailscale up --authkey "$TAILSCALE_AUTHKEY"
-          timeout 30s bash -c 'until sudo tailscale status | grep -q "Connected"; do sleep 2; done'
+          sudo $(which tailscale) up --authkey "$TAILSCALE_AUTHKEY"
+          timeout 30s bash -c 'until sudo $(which tailscale) status | grep -q "Connected"; do sleep 2; done'
 
       - name: Install nixos-rebuild
         run: nix profile install nixpkgs#nixos-rebuild
