@@ -1,4 +1,4 @@
-name: Rebuild NixOS
+name: Build and Deploy NixOS
 
 on:
   push:
@@ -9,9 +9,11 @@ permissions:
   contents: read
 
 jobs:
-  rebuild:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      image-path: ${{ steps.find-image.outputs.image-path }}
 
     steps:
       - name: Maximize build space
@@ -41,51 +43,64 @@ jobs:
             extra-platforms = aarch64-linux
             trusted-users = root runner
 
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
-          tags: tag:ci
-          version: 1.60.0  # Specify a version explicitly
-        id: tailscale
+      - name: Install zstd
+        run: sudo apt-get update && sudo apt-get install -y zstd
 
-      - name: Wait for Tailscale
+      - name: Build NixOS
         run: |
-          echo "Waiting for Tailscale to be ready..."
-          sleep 10  # Give Tailscale some time to establish connection
-          tailscale status
-          echo "Testing connectivity..."
-          ping -c 4 ${{ vars.ETHERNIX }}
-
-      - name: Configure SSH
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          echo "Host ethernix.tamarin-sunfish.ts.net" > ~/.ssh/config
-          echo "  IdentityFile ~/.ssh/id_ed25519" >> ~/.ssh/config
-          echo "  User aloshy" >> ~/.ssh/config
-          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-          echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
-
-      - name: Build and Deploy
-        env:
-          ETHERNIX: ${{ vars.ETHERNIX }}
-        run: |
-          # Build locally to catch any errors
           nix build .#nixosConfigurations.ethernix.config.system.build.toplevel \
             --impure \
             --option sandbox false \
             --option extra-platforms aarch64-linux \
             --option system-features kvm
 
-          echo "Testing SSH connection before deploy..."
-          ssh -v -i ~/.ssh/id_ed25519 aloshy@$ETHERNIX "echo 'SSH connection successful'"
+      - name: Find and extract image
+        id: find-image
+        run: |
+          mkdir -p out
+          IMAGE_PATH=$(find /nix/store -name 'nixos-image-sd-card-*.img.zst' -print -quit)
+          echo "image-path=${IMAGE_PATH}" >> "$GITHUB_OUTPUT"
+          unzstd -d "${IMAGE_PATH}" -o out/ethernix.img
 
-          # Then deploy if build succeeds
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nixos-image
+          path: out/ethernix.img
+          retention-days: 5
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Deploy to NixOS
+        env:
+          ETHERNIX: ${{ vars.ETHERNIX }}
+        run: |
           nix run nixpkgs#nixos-rebuild -- switch \
             --flake .#ethernix \
             --target-host "aloshy@$ETHERNIX" \
