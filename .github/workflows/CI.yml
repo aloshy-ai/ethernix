@@ -56,12 +56,16 @@ jobs:
         env:
           ETHERNIX: ${{ vars.ETHERNIX }}
         run: |
+          # Add home-manager input
+          nix registry add home-manager github:nix-community/home-manager
+          
           # First build locally to catch any errors
-          nix build .#nixosConfigurations.ethernix.config.system.build.toplevel
+          nix build .#nixosConfigurations.ethernix.config.system.build.toplevel --impure
           
           # Then deploy if build succeeds
           nixos-rebuild switch \
             --flake .#ethernix \
             --target-host "aloshy@$ETHERNIX" \
             --use-remote-sudo \
+            --impure \
             --show-trace
