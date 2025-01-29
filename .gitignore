@@ -1,3 +1,5 @@
 .devbox
 out
-actions-runner/
+actions-runner
+.env*
+!.env.example

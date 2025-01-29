@@ -3,7 +3,8 @@
   "packages": [
     "docker@latest",
     "mkpasswd@latest",
-    "act"
+    "act",
+    "dotenvx@latest"
   ],
   "shell": {
     "init_hook": [
@@ -11,8 +12,8 @@
     ],
     "scripts": {
       "build": [
-        "docker build --no-cache -t ethernix-builder .",
-        "docker run --rm -it -v \"$(pwd):/build\" --platform linux/arm64 ethernix-builder sh -c \"mkdir -p out && ./build.sh && unzstd -d $(readlink -f ethernix.sd)/sd-image/nixos-image-sd-card-*.img.zst -o out/ethernix.img && chown -R $(id -u):$(id -g) out\""
+        "docker build -t ethernix-builder:latest .",
+        "docker run --rm -it -v \"$(pwd):/build\" --platform linux/arm64 ethernix-builder:latest sh -c \"mkdir -p out && ./build.sh && unzstd -d $(readlink -f ethernix.sd)/sd-image/nixos-image-sd-card-*.img.zst -o out/ethernix.img && chown -R $(id -u):$(id -g) out\""
       ],
       "act": [
         "act push -P self-hosted=catthehacker/ubuntu:act-latest --container-architecture linux/amd64"
@@ -20,8 +21,11 @@
       "runner": [
         "chmod +x actions-runner/run.sh",
         "actions-runner/run.sh"
+      ],
+      "rebuild": [
+        "docker build -t ethernix-builder:latest .",
+        "docker run --rm -it -v \"$(pwd):/build\" --platform linux/arm64 ethernix-builder:latest /bin/sh -c \"cd /build && dotenvx run -- nixos-rebuild switch --flake .#ethernix --target-host aloshy@\\$REMOTE_HOST --use-remote-sudo\""
       ]
     }
   }
 }
-

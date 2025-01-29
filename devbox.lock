@@ -53,6 +53,54 @@
         }
       }
     },
+    "dotenvx@latest": {
+      "last_modified": "2025-01-25T23:17:58Z",
+      "resolved": "github:NixOS/nixpkgs/b582bb5b0d7af253b05d58314b85ab8ec46b8d19#dotenvx",
+      "source": "devbox-search",
+      "version": "1.33.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/lka7z62qkpk216q528smkak0wrh9qb4s-dotenvx-1.33.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/lka7z62qkpk216q528smkak0wrh9qb4s-dotenvx-1.33.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/0ks6fzppgiwpavk9d7h77lnfq52b3n89-dotenvx-1.33.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/0ks6fzppgiwpavk9d7h77lnfq52b3n89-dotenvx-1.33.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/a22h60yqnsysg17aia8x4x580r1zyl4f-dotenvx-1.33.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/a22h60yqnsysg17aia8x4x580r1zyl4f-dotenvx-1.33.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/69biksk1jpk16qbjvi0h0g77rbsm8xhh-dotenvx-1.33.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/69biksk1jpk16qbjvi0h0g77rbsm8xhh-dotenvx-1.33.0"
+        }
+      }
+    },
     "mkpasswd@latest": {
       "last_modified": "2025-01-25T23:17:58Z",
       "resolved": "github:NixOS/nixpkgs/b582bb5b0d7af253b05d58314b85ab8ec46b8d19#mkpasswd",

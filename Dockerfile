@@ -1,12 +1,12 @@
 FROM nixos/nix
 
 # Install git which is needed for flakes
-RUN nix-channel --update && \
-    nix-env -iA nixpkgs.git nixpkgs.busybox nixpkgs.zstd
+RUN nix-channel --update
+RUN nix-env -iA nixpkgs.git nixpkgs.busybox nixpkgs.zstd nixpkgs.dotenvx nixpkgs.nixos-rebuild
 
 # Enable flakes
-RUN mkdir -p ~/.config/nix && \
-    echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+RUN mkdir -p ~/.config/nix
+RUN echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 # Set working directory
 WORKDIR /build

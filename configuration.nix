@@ -5,6 +5,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    <home-manager/nixos>
   ];
 
   # Use the extlinux boot loader. (NixOS wants to enable GRUB by default)
@@ -70,118 +71,6 @@
   # on your system were taken. It's perfectly fine and recommended to leave
   # this value at the release version of your first install.
   system.stateVersion = "25.05";
-}
-# configuration.nix
-
-{ pkgs, ... }:
-
-{
-  imports = [
-    ./hardware-configuration.nix
-    <home-manager/nixos>
-  ];
-
-  # Boot Configuration
-  boot = {
-    loader = {
-      grub = {
-        enable = false;
-      };
-      generic-extlinux-compatible = {
-        enable = true;
-      };
-    };
-  };
-  
-  # System Configuration
-  system = {
-    stateVersion = "25.05";
-  };
-
-  # Nix Package Manager Configuration
-  nix = {
-    package = pkgs.nixVersions.stable;
-    extraOptions = ''
-      keep-outputs = true
-      keep-derivations = true
-      experimental-features = nix-command flakes
-    '';
-    settings = {
-      trusted-users = [
-        "aloshy"
-      ];
-      auto-optimise-store = true;
-    };
-    gc = {
-      automatic = true;
-      dates = "daily";
-      options = "--delete-older-than 1d";
-    };
-  };
-
-  # Network Configuration
-  networking = {
-    hostName = "ethernix";
-    interfaces = {
-      end0 = {
-        ipv4 = {
-          addresses = [{
-            address = "192.168.8.69";
-            prefixLength = 24;
-          }];
-        };
-      };
-    };
-    defaultGateway = {
-      address = "192.168.8.1";
-      interface = "end0";
-    };
-    nameservers = [
-      "192.168.8.1"
-    ];
-  };
-
-  # User Configuration
-  users = {
-    users = {
-      aloshy = {
-        isNormalUser = true;
-        extraGroups = [ 
-          "wheel" 
-          "docker" 
-          "networkmanager" 
-          "video" 
-        ];
-        hashedPassword = "$6$OF89tQYOvaEHKCfx$KYSdQu/GHroUMovkUKUqbvUpEM51MurUpLob6E9YiEMWxvABDsrfACQxej02f9xuV5.HnNtMmpEoLDeAqCZfB1";
-        shell = pkgs.zsh;
-        openssh = {
-          authorizedKeys = {
-            keys = [
-              "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINzsLYdG0gkky7NCydRoqc0EMYEb61V+xsFKYJpH+ivV aloshy@ETHERFORGE.local"
-            ];
-          };
-        };
-      };
-    };
-  };
-
-  # Environment Configuration
-  environment = {
-    systemPackages = with pkgs; [
-      tailscale
-    ];
-    variables = {
-      SHELL = "zsh";
-      EDITOR = "nano";
-    };
-  };
-
-  # Program Configuration
-  programs = {
-    zsh = {
-      enable = true;
-    };
-  };
 
   # Home Manager Configuration
   home-manager.users.aloshy = { pkgs, ... }: {
