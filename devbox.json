@@ -3,8 +3,7 @@
   "packages": [
     "docker@latest",
     "mkpasswd@latest",
-    "act",
-    "dotenvx@latest"
+    "act"
   ],
   "shell": {
     "init_hook": [
@@ -22,7 +21,7 @@
         "chmod +x actions-runner/run.sh",
         "actions-runner/run.sh"
       ],
-      "rebuild": [
+      "remote-rebuild": [
         "docker build -t ethernix-builder:latest .",
         "docker run --rm -it -v \"$(pwd):/build\" --platform linux/arm64 ethernix-builder:latest /bin/sh -c \"cd /build && dotenvx run -- nixos-rebuild switch --flake .#ethernix --target-host aloshy@\\$REMOTE_HOST --use-remote-sudo\""
       ]

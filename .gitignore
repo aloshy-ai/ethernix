@@ -2,4 +2,6 @@
 out
 actions-runner
 .env*
+!.envrc
 !.env.example
+DS_Store
