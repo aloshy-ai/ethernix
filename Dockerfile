@@ -14,6 +14,9 @@ RUN nix-env -iA nixpkgs.git nixpkgs.busybox nixpkgs.zstd nixpkgs.dotenvx nixpkgs
 RUN mkdir -p ~/.config/nix
 RUN echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
+# Configure Git to be more permissive with repository ownership
+RUN git config --system safe.directory '*'
+
 # Set build directory
 WORKDIR /build
 
