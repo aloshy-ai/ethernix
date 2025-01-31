@@ -94,55 +94,110 @@ jobs:
       - name: Configure Temporary SSH Access
         run: |
           # Get access token
-          ACCESS_TOKEN=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
-                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+                             "$TAILSCALE_API_URL/oauth/token")
+          
+          if ! echo "$TOKEN_RESPONSE" | jq empty; then
+            echo "Invalid JSON response from token endpoint"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r .access_token)
 
           if [ -z "$ACCESS_TOKEN" ]; then
             echo "Failed to obtain access token"
+            echo "Response: $TOKEN_RESPONSE"
             exit 1
           fi
 
-          # Get current ACL and ensure it's valid JSON
-          CURRENT_ACL=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+          # Get current ACL with error checking
+          ACL_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             "$TAILSCALE_API_URL/tailnet/-/acl")
-
-          if ! echo "$CURRENT_ACL" | jq empty; then
-            echo "Invalid JSON received from ACL endpoint"
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to fetch ACL"
+            echo "Response: $ACL_RESPONSE"
             exit 1
           fi
 
-          # Process ACL updates
-          CLEANED_ACL=$(echo "$CURRENT_ACL" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+          if ! echo "$ACL_RESPONSE" | jq empty; then
+            echo "Invalid JSON received from ACL endpoint"
+            echo "Response: $ACL_RESPONSE"
+            exit 1
+          fi
+
+          # Process ACL updates with error checking
+          CLEANED_ACL=$(echo "$ACL_RESPONSE" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))' || exit 1)
           
+          if [ -z "$CLEANED_ACL" ]; then
+            echo "Failed to clean ACL"
+            exit 1
+          fi
+
           NEW_ACL=$(echo "$CLEANED_ACL" | jq -c '.ssh += [{
             "action": "accept",
             "src": ["tag:ci"],
             "dst": ["tag:ci"],
             "users": ["runner"]
-          }]')
+          }]' || exit 1)
 
-          # Update ACL
-          curl -s -X POST \
+          if [ -z "$NEW_ACL" ]; then
+            echo "Failed to create new ACL"
+            exit 1
+          fi
+
+          # Update ACL with error checking
+          UPDATE_RESPONSE=$(curl -s -f -X POST \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$NEW_ACL" \
-            "$TAILSCALE_API_URL/tailnet/-/acl"
+            "$TAILSCALE_API_URL/tailnet/-/acl")
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to update ACL"
+            echo "Response: $UPDATE_RESPONSE"
+            exit 1
+          fi
 
       - name: Get Device Information
         id: device-info
         run: |
-          ACCESS_TOKEN=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
-                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
-
-          if [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to obtain access token"
+                             "$TAILSCALE_API_URL/oauth/token")
+          
+          if ! echo "$TOKEN_RESPONSE" | jq empty; then
+            echo "Invalid JSON response from token endpoint"
+            echo "Response: $TOKEN_RESPONSE"
             exit 1
           fi
 
-          DEVICE_INFO=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            "$TAILSCALE_API_URL/tailnet/-/devices" | \
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r .access_token)
+
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain access token"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          DEVICES_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            "$TAILSCALE_API_URL/tailnet/-/devices")
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to fetch devices"
+            echo "Response: $DEVICES_RESPONSE"
+            exit 1
+          fi
+
+          if ! echo "$DEVICES_RESPONSE" | jq empty; then
+            echo "Invalid JSON received from devices endpoint"
+            echo "Response: $DEVICES_RESPONSE"
+            exit 1
+          fi
+
+          DEVICE_INFO=$(echo "$DEVICES_RESPONSE" | \
             jq -c '.devices[] | select(.hostname=="ethernix") | {name: .name, lastSeen: .lastSeen, id: .id, tags: .tags}')
 
           if [ -z "$DEVICE_INFO" ]; then
@@ -174,15 +229,35 @@ jobs:
         env:
           DEVICE_ID: ${{ steps.device-info.outputs.device_id }}
         run: |
-          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
-                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+                             "$TAILSCALE_API_URL/oauth/token")
+          
+          if ! echo "$TOKEN_RESPONSE" | jq empty; then
+            echo "Invalid JSON response from token endpoint"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
 
-          curl -X POST \
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r .access_token)
+
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain access token"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          UPDATE_RESPONSE=$(curl -s -f -X POST \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d '["tag:ci"]' \
-            "$TAILSCALE_API_URL/device/${DEVICE_ID}/tags"
+            "$TAILSCALE_API_URL/device/${DEVICE_ID}/tags")
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to update device tags"
+            echo "Response: $UPDATE_RESPONSE"
+            exit 1
+          fi
 
       - name: Deploy NixOS Configuration
         if: steps.device-status.outputs.online == 'true'
@@ -216,27 +291,54 @@ jobs:
       - name: Cleanup SSH Access
         if: always()
         run: |
-          ACCESS_TOKEN=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
-                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+                             "$TAILSCALE_API_URL/oauth/token")
+          
+          if ! echo "$TOKEN_RESPONSE" | jq empty; then
+            echo "Invalid JSON response from token endpoint"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r .access_token)
 
           if [ -z "$ACCESS_TOKEN" ]; then
             echo "Failed to obtain access token"
+            echo "Response: $TOKEN_RESPONSE"
             exit 1
           fi
 
-          CURRENT_ACL=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+          ACL_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             "$TAILSCALE_API_URL/tailnet/-/acl")
-
-          if ! echo "$CURRENT_ACL" | jq empty; then
-            echo "Invalid JSON received from ACL endpoint"
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to fetch ACL"
+            echo "Response: $ACL_RESPONSE"
             exit 1
           fi
 
-          NEW_ACL=$(echo "$CURRENT_ACL" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+          if ! echo "$ACL_RESPONSE" | jq empty; then
+            echo "Invalid JSON received from ACL endpoint"
+            echo "Response: $ACL_RESPONSE"
+            exit 1
+          fi
 
-          curl -s -X POST \
+          NEW_ACL=$(echo "$ACL_RESPONSE" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))' || exit 1)
+
+          if [ -z "$NEW_ACL" ]; then
+            echo "Failed to create new ACL"
+            exit 1
+          fi
+
+          UPDATE_RESPONSE=$(curl -s -f -X POST \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$NEW_ACL" \
-            "$TAILSCALE_API_URL/tailnet/-/acl"
+            "$TAILSCALE_API_URL/tailnet/-/acl")
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to update ACL"
+            echo "Response: $UPDATE_RESPONSE"
+            exit 1
+          fi
