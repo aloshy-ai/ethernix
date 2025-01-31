@@ -65,6 +65,8 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      TAILSCALE_API_URL: "https://api.tailscale.com/api/v2"
     steps:
       - uses: actions/checkout@v4
 
@@ -89,15 +91,123 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
 
-      - name: Deploy
+      - name: Configure Temporary SSH Access
+        run: |
+          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+                             -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
+                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+
+          CURRENT_ACL=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            "$TAILSCALE_API_URL/tailnet/-/acl")
+
+          CLEANED_ACL=$(echo $CURRENT_ACL | jq 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+
+          NEW_ACL=$(echo $CLEANED_ACL | jq '.ssh += [{
+            "action": "accept",
+            "src": ["tag:ci"],
+            "dst": ["tag:ci"],
+            "users": ["runner"]
+          }]')
+
+          curl -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$NEW_ACL" \
+            "$TAILSCALE_API_URL/tailnet/-/acl"
+
+      - name: Get Device Information
+        id: device-info
+        run: |
+          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+                             -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
+                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+
+          DEVICE_INFO=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            "$TAILSCALE_API_URL/tailnet/-/devices" | \
+            jq '.devices[] | select(.hostname=="ethernix") | {name: .name, lastSeen: .lastSeen, id: .id, tags: .tags}')
+
+          if [ -z "$DEVICE_INFO" ]; then
+            echo "Error: Device 'ethernix' not found"
+            exit 1
+          fi
+
+          echo "name=$(echo "$DEVICE_INFO" | jq -r .name)" >> $GITHUB_OUTPUT
+          echo "last_seen=$(echo "$DEVICE_INFO" | jq -r .lastSeen)" >> $GITHUB_OUTPUT
+          echo "device_id=$(echo "$DEVICE_INFO" | jq -r .id)" >> $GITHUB_OUTPUT
+          echo "has_ci_tag=$(echo "$DEVICE_INFO" | jq -r '.tags | contains(["tag:ci"])')" >> $GITHUB_OUTPUT
+
+      - name: Check Device Online Status
+        id: device-status
+        run: |
+          LAST_SEEN_TS=$(date -d "${{ steps.device-info.outputs.last_seen }}" +%s)
+          CURRENT_TS=$(date +%s)
+          DIFF=$((CURRENT_TS - LAST_SEEN_TS))
+          
+          if [ $DIFF -le 300 ]; then
+            echo "online=true" >> $GITHUB_OUTPUT
+          else
+            echo "online=false" >> $GITHUB_OUTPUT
+            echo "Skipping deployment: Target device was last seen $DIFF seconds ago (at: ${{ steps.device-info.outputs.last_seen }})"
+          fi
+
+      - name: Add CI Tag
+        if: steps.device-status.outputs.online == 'true' && steps.device-info.outputs.has_ci_tag == 'false'
         env:
-          ETHERNIX: ${{ vars.ETHERNIX }}
+          DEVICE_ID: ${{ steps.device-info.outputs.device_id }}
+        run: |
+          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+                             -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
+                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+
+          curl -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '["tag:ci"]' \
+            "$TAILSCALE_API_URL/device/${DEVICE_ID}/tags"
+
+      - name: Deploy NixOS Configuration
+        if: steps.device-status.outputs.online == 'true'
+        env:
+          TARGET_HOST: ${{ steps.device-info.outputs.name }}
         run: |
           nix run nixpkgs#nixos-rebuild -- switch \
             --flake .#ethernix \
-            --target-host "$ETHERNIX" \
+            --target-host "$TARGET_HOST" \
             --use-remote-sudo \
             --impure \
             --option extra-platforms aarch64-linux \
             --option system-features kvm \
             --show-trace
+
+      - name: Cleanup CI Tag
+        if: always()
+        env:
+          DEVICE_ID: ${{ steps.device-info.outputs.device_id }}
+        run: |
+          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+                             -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
+                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+
+          curl -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '[]' \
+            "$TAILSCALE_API_URL/device/${DEVICE_ID}/tags"
+
+      - name: Cleanup SSH Access
+        if: always()
+        run: |
+          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+                             -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
+                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+
+          CURRENT_ACL=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            "$TAILSCALE_API_URL/tailnet/-/acl")
+
+          NEW_ACL=$(echo $CURRENT_ACL | jq 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+
+          curl -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$NEW_ACL" \
+            "$TAILSCALE_API_URL/tailnet/-/acl"
