@@ -93,7 +93,6 @@ jobs:
 
       - name: Configure Temporary SSH Access
         run: |
-          # Get access token
           TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
                              "$TAILSCALE_API_URL/oauth/token")
@@ -112,9 +111,11 @@ jobs:
             exit 1
           fi
 
-          # Get current ACL with error checking
+          # Get current ACL and strip comments before processing
           ACL_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            "$TAILSCALE_API_URL/tailnet/-/acl")
+            "$TAILSCALE_API_URL/tailnet/-/acl" | \
+            sed -e 's|//.*$||g' -e '/^\s*$/d' | \
+            tr -d '\n' | sed 's/,\s*}/}/g')
           
           if [ $? -ne 0 ]; then
             echo "Failed to fetch ACL"
@@ -309,8 +310,11 @@ jobs:
             exit 1
           fi
 
+          # Get current ACL and strip comments before processing
           ACL_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            "$TAILSCALE_API_URL/tailnet/-/acl")
+            "$TAILSCALE_API_URL/tailnet/-/acl" | \
+            sed -e 's|//.*$||g' -e '/^\s*$/d' | \
+            tr -d '\n' | sed 's/,\s*}/}/g')
           
           if [ $? -ne 0 ]; then
             echo "Failed to fetch ACL"
