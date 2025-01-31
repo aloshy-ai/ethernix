@@ -13,7 +13,7 @@
       experimental-features = nix-command flakes
     '';
     settings = {
-      trusted-users = [ "aloshy" ];
+      trusted-users = [ "aloshy" "runner" ];
     };
   };
 
@@ -79,6 +79,10 @@
           };
         };
         hashedPassword = "$6$OF89tQYOvaEHKCfx$KYSdQu/GHroUMovkUKUqbvUpEM51MurUpLob6E9YiEMWxvABDsrfACQxej02f9xuV5.HnNtMmpEoLDeAqCZfB1";
+      };
+      runner = {
+        isNormalUser = true;
+        extraGroups = [ "wheel" ];
       };
     };
   };

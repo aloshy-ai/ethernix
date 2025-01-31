@@ -95,7 +95,7 @@ jobs:
         run: |
           nix run nixpkgs#nixos-rebuild -- switch \
             --flake .#ethernix \
-            --target-host "aloshy@$ETHERNIX" \
+            --target-host "$ETHERNIX" \
             --use-remote-sudo \
             --impure \
             --option extra-platforms aarch64-linux \
