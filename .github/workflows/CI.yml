@@ -93,23 +93,37 @@ jobs:
 
       - name: Configure Temporary SSH Access
         run: |
-          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          # Get access token
+          ACCESS_TOKEN=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
                              "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
 
-          CURRENT_ACL=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain access token"
+            exit 1
+          fi
+
+          # Get current ACL and ensure it's valid JSON
+          CURRENT_ACL=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             "$TAILSCALE_API_URL/tailnet/-/acl")
 
-          CLEANED_ACL=$(echo $CURRENT_ACL | jq 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+          if ! echo "$CURRENT_ACL" | jq empty; then
+            echo "Invalid JSON received from ACL endpoint"
+            exit 1
+          fi
 
-          NEW_ACL=$(echo $CLEANED_ACL | jq '.ssh += [{
+          # Process ACL updates
+          CLEANED_ACL=$(echo "$CURRENT_ACL" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+          
+          NEW_ACL=$(echo "$CLEANED_ACL" | jq -c '.ssh += [{
             "action": "accept",
             "src": ["tag:ci"],
             "dst": ["tag:ci"],
             "users": ["runner"]
           }]')
 
-          curl -X POST \
+          # Update ACL
+          curl -s -X POST \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$NEW_ACL" \
@@ -118,13 +132,18 @@ jobs:
       - name: Get Device Information
         id: device-info
         run: |
-          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          ACCESS_TOKEN=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
                              "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
 
-          DEVICE_INFO=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain access token"
+            exit 1
+          fi
+
+          DEVICE_INFO=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             "$TAILSCALE_API_URL/tailnet/-/devices" | \
-            jq '.devices[] | select(.hostname=="ethernix") | {name: .name, lastSeen: .lastSeen, id: .id, tags: .tags}')
+            jq -c '.devices[] | select(.hostname=="ethernix") | {name: .name, lastSeen: .lastSeen, id: .id, tags: .tags}')
 
           if [ -z "$DEVICE_INFO" ]; then
             echo "Error: Device 'ethernix' not found"
@@ -197,16 +216,26 @@ jobs:
       - name: Cleanup SSH Access
         if: always()
         run: |
-          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          ACCESS_TOKEN=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
                              "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
 
-          CURRENT_ACL=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain access token"
+            exit 1
+          fi
+
+          CURRENT_ACL=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             "$TAILSCALE_API_URL/tailnet/-/acl")
 
-          NEW_ACL=$(echo $CURRENT_ACL | jq 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+          if ! echo "$CURRENT_ACL" | jq empty; then
+            echo "Invalid JSON received from ACL endpoint"
+            exit 1
+          fi
 
-          curl -X POST \
+          NEW_ACL=$(echo "$CURRENT_ACL" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))')
+
+          curl -s -X POST \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$NEW_ACL" \
