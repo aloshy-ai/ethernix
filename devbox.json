@@ -2,8 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.7/.schema/devbox.schema.json",
   "packages": [
     "docker@latest",
-    "mkpasswd@latest",
-    "act"
+    "mkpasswd@latest"
   ],
   "shell": {
     "init_hook": [
@@ -12,10 +11,8 @@
     "scripts": {
       "build": [
         "docker build -t ethernix-builder:latest .",
-        "docker run --rm -it -v \"$(pwd):/build\" --platform linux/arm64 ethernix-builder:latest sh -c \"mkdir -p out && ./build.sh && find /nix/store -name 'nixos-image-sd-card-*.img.zst' -exec unzstd -d {} -o out/ethernix.img \\; && chown -R $(id -u):$(id -g) out\""
-      ],
-      "test": [
-        "act push -n -P self-hosted=catthehacker/ubuntu:act-runner --container-architecture linux/amd64 --artifact-server-path /tmp/artifacts"
+        "docker run --rm -it -v \"$(pwd):/build\" --platform linux/arm64 ethernix-builder:latest sh -c \"mkdir -p out && ./scripts/build.sh && find /nix/store -name 'nixos-image-sd-card-*.img.zst' -exec unzstd -d {} -o out/ethernix.img \\; && chown -R $(id -u):$(id -g) out\"",
+        "echo 'Image built successfully. You can find `ethernix.img` in the `out/` directory.'"
       ]
     }
   }

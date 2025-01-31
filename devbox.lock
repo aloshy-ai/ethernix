@@ -1,10 +1,6 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "act": {
-      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#act",
-      "source": "nixpkg"
-    },
     "docker@latest": {
       "last_modified": "2025-01-25T23:17:58Z",
       "resolved": "github:NixOS/nixpkgs/b582bb5b0d7af253b05d58314b85ab8ec46b8d19#docker",

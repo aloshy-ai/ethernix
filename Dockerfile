@@ -1,14 +1,20 @@
+# Use official Nix base image
 FROM nixos/nix
 
-# Install git which is needed for flakes
+# Install required packages:
+# - git: Required for flakes
+# - busybox: Basic Unix utilities
+# - zstd: Compression/decompression
+# - dotenvx: Environment variable management
+# - nixos-rebuild: System configuration tool
 RUN nix-channel --update
 RUN nix-env -iA nixpkgs.git nixpkgs.busybox nixpkgs.zstd nixpkgs.dotenvx nixpkgs.nixos-rebuild
 
-# Enable flakes
+# Configure Nix to use flakes
 RUN mkdir -p ~/.config/nix
 RUN echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
-# Set working directory
+# Set build directory
 WORKDIR /build
 
-# We'll mount the files at runtime, so no COPY needed here
+# Note: Files are mounted at runtime via docker run -v

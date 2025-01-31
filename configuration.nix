@@ -1,10 +1,12 @@
 { pkgs, ... }:
 
 {
+  # Import hardware configuration
   imports = [
     ./hardware-configuration.nix
   ];
 
+  # Nix package manager configuration
   nix = {
     package = pkgs.nixVersions.stable;
     extraOptions = ''
@@ -17,19 +19,18 @@
     };
   };
 
+  # Boot configuration for ARM64
   boot = {
     loader = {
-      grub = {
-        enable = false;
-      };
-      generic-extlinux-compatible = {
-        enable = true;
-      };
+      grub.enable = false;  # Disable GRUB for ARM
+      generic-extlinux-compatible.enable = true;  # Use extlinux for ARM
     };
   };
 
+  # Network configuration
   networking = {
     hostName = "ethernix";
+    # Static IP configuration
     interfaces = {
       end0 = {
         ipv4 = {
@@ -47,7 +48,9 @@
     nameservers = [ "192.168.8.1" ];
   };
 
+  # System services configuration
   services = {
+    # SSH server configuration
     openssh = {
       enable = true;
       settings = {
@@ -56,6 +59,7 @@
         X11Forwarding = true;
       };
     };
+    # Tailscale VPN configuration
     tailscale = {
       enable = true;
       authKeyFile = "/etc/tailscale/authkey";

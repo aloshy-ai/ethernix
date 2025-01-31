@@ -1,45 +1,55 @@
 # ETHERNIX
 
 [![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/contributor-quickstart/)
-[![CI](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml/badge.svg)](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml)
+[![Build Status](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/aloshy-ai/YOUR_GIST_ID/raw/ethernix-junit-tests.json)](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml)
+[![Deployment Status](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/aloshy-ai/YOUR_GIST_ID/raw/ethernix-deployment.json)](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml)
+[![Apple Silicon Ready](https://img.shields.io/badge/Apple%20Silicon-Ready-success?logo=apple&logoColor=white)](https://github.com/aloshy-ai/ethernix)
+[![Platform](https://img.shields.io/badge/platform-Darwin%20%7C%20Linux-blue)](https://github.com/aloshy-ai/ethernix)
+[![Docker Support](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)](https://github.com/aloshy-ai/ethernix)
 
-A NixOS image builder for Raspberry Pi 4.
+A NixOS image builder for Raspberry Pi 4 that provides a streamlined way to create custom NixOS images. Works natively on Apple Silicon (M1/M2/M3) Macs through Docker-based cross-compilation, ensuring seamless build experience across platforms.
 
-## Features
+## Overview
 
-- Custom NixOS configuration for Raspberry Pi 4
-- Automated build process using Devbox
-- Pre-configured network settings
-- SSH enabled by default
-- Basic system tools included
+ETHERNIX simplifies the process of creating NixOS images for Raspberry Pi 4 by providing:
 
-## Prerequisites
+- Declarative NixOS configuration specifically optimized for Raspberry Pi 4
+- Automated build pipeline using Devbox
+- Pre-configured networking and SSH access
+- Essential system utilities pre-installed
+- Reproducible builds through Nix
+- Native support for Apple Silicon through Docker-based cross-compilation
 
-- [Devbox](https://www.jetify.com/docs/devbox/installing_devbox)
-- Docker Desktop or Colima (8GB RAM, 4 CPUs minimum)
-- SD Card (8GB minimum)
-- SD Card reader/writer
+## System Requirements
 
-## Installation
+- [Devbox](https://www.jetify.com/docs/devbox/installing_devbox) installed
+- Container runtime:
+  - Docker Desktop or Colima with minimum 8GB RAM and 4 CPUs
+- Hardware:
+  - SD Card (minimum 8GB)
+  - SD Card reader/writer
+  - Raspberry Pi 4
 
-1. Clone the repository:
+## Quick Start
+
+1. Clone and enter the repository:
    ```bash
    git clone https://github.com/aloshy-ai/ethernix.git
    cd ethernix
    ```
 
-2. Enter the Devbox shell:
+2. Initialize development environment:
    ```bash
    devbox shell
    ```
-   > **Note**: If using `direnv`, run `direnv allow` to activate the environment automatically.
+   For `direnv` users, run `direnv allow` instead.
 
-3. Generate a password hash:
+3. Generate a secure password hash:
    ```bash
-   ./passwdgen.sh
+   ./scripts/passwdgen.sh
    ```
 
-4. Update the configuration:
+4. Configure the user account in `configuration.nix`:
    ```nix
    users.users.admin = {
      isNormalUser = true;
@@ -53,100 +63,148 @@ A NixOS image builder for Raspberry Pi 4.
    devbox run build
    ```
 
-## Writing to SD Card
+## SD Card Installation
 
-1. List available disks:
+1. Identify your SD card:
    ```bash
    diskutil list
    ```
 
-2. Unmount the target disk:
+2. Prepare the SD card:
    ```bash
    sudo diskutil unmountDisk /dev/diskN
    ```
+   > Replace `diskN` with your SD card's identifier (e.g., `disk6`)
 
-3. Write the image:
+3. Flash the image:
    ```bash
    sudo dd if=out/ethernix.img of=/dev/diskN bs=1M status=progress
    ```
-   > ⚠️ **Warning**: Verify the disk identifier carefully to avoid data loss.
+   > ⚠️ **CAUTION**: Double-check the disk identifier to prevent data loss
 
-4. Finalize:
+4. Safely eject:
    ```bash
    sudo sync
    sudo diskutil eject /dev/diskN
    ```
 
-## Usage
+## Initial Setup
 
-1. Insert SD card into Raspberry Pi 4
-2. Connect ethernet cable
-3. Power on the device
-4. Connect via SSH:
+1. Insert the SD card and connect your Raspberry Pi 4 to:
+   - Power supply
+   - Ethernet cable
+   - (Optional) Display and keyboard for direct access
 
+2. Access via SSH:
    ```bash
    ssh aloshy@192.168.8.69
    ```
 
-5. Update Nix Channel:
-
+3. Update system channels:
    ```bash
    sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos
    sudo nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
    sudo nix-channel --update
    ```
 
-6. Generate NixOS configuration:
-
+4. Set up system configuration:
    ```bash
    sudo nixos-generate-config
    ```
 
-7. Copy `flake.nix` and `configuration.nix` to the Raspberry Pi:
-
-   a. On your local machine:
-
+5. Transfer configuration files:
+   
+   From your development machine:
    ```bash
-   scp -i ~/.ssh/id_ed25519 flake.nix aloshy@192.168.8.69:/tmp/flake.nix
-   scp -i ~/.ssh/id_ed25519 configuration.nix aloshy@192.168.8.69:/tmp/configuration.nix
+   scp -i ~/.ssh/id_rsa {flake.nix,configuration.nix} aloshy@192.168.8.69:/tmp/
    ```
 
-   b. On the Raspberry Pi:
-
+   On the Raspberry Pi:
    ```bash
-   sudo mv /tmp/flake.nix /etc/nixos/flake.nix
-   sudo mv /tmp/configuration.nix /etc/nixos/configuration.nix
+   sudo mv /tmp/{flake.nix,configuration.nix} /etc/nixos/
    ```
 
-8. Apply the configuration:
-
+6. Apply the configuration:
    ```bash
    sudo nixos-rebuild switch -I nixos-config=/etc/nixos/flake.nix
    ```
 
 ## Default Configuration
 
-- Username: `aloshy`
-- IP Address: `192.168.8.69`
-- SSH: Enabled
-- Included packages: vim, wget, and other basic utilities
+- User Account: `aloshy`
+- Network: Static IP `192.168.8.69`
+- Services: SSH enabled
+- Core Utilities: vim, wget, and essential tools
+
+## Auto-Deployment Setup
+
+ETHERNIX supports automatic deployment using GitHub Actions and Tailscale. This allows you to automatically deploy configuration changes to your Raspberry Pi when changes are pushed to the main branch.
+
+### Prerequisites
+
+1. A Tailscale account and network
+2. GitHub repository secrets configured
+3. Your Raspberry Pi connected to Tailscale
+
+### Setup Steps
+
+1. Connect your Raspberry Pi to Tailscale:
+   ```bash
+   sudo tailscale up --ssh --advertise-exit-node
+   ```
+
+2. Configure GitHub repository secrets:
+   - `TAILSCALE_OAUTH_CLIENT_ID`: Your Tailscale OAuth client ID
+   - `TAILSCALE_OAUTH_CLIENT_SECRET`: Your Tailscale OAuth client secret
+   - `TAILSCALE_TAILNET`: Your Tailscale network name
+
+3. Ensure your `configuration.nix` includes Tailscale service:
+   ```nix
+   services.tailscale = {
+     enable = true;
+     authKeyFile = "/etc/tailscale/authkey";
+     extraUpFlags = [
+       "--ssh"
+       "--advertise-exit-node"
+     ];
+   };
+
+   # Add runner user for GitHub Actions
+   users.users.runner = {
+     isNormalUser = true;
+     extraGroups = [ "wheel" ];
+   };
+   ```
+
+4. The CI workflow will:
+   - Connect to your Tailscale network
+   - Verify device connectivity
+   - Deploy configuration changes
+   - Automatically rebuild NixOS on your Raspberry Pi
+
+### Deployment Process
+
+1. Push changes to the main branch
+2. GitHub Actions will:
+   - Build and verify changes
+   - Connect to your Tailscale network
+   - Update ACL policies
+   - Deploy to devices tagged with `tag:ci`
+   - Rebuild NixOS configuration
+
+### Monitoring Deployments
+
+- Check deployment status in the GitHub Actions tab
+- Monitor Tailscale device status in your admin console
+- View deployment logs for troubleshooting
+
+### Security Considerations
+
+- The CI runner has limited permissions through Tailscale ACLs
+- Deployments only run on the main branch
+- Configuration changes require successful builds
+- Remote access is secured through Tailscale's encryption
 
 ## Customization
 
-Edit `configuration.nix` to modify:
-- Username
-- Hostname
-- Network settings
-- Package selection
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The system can be customized by modifying `
