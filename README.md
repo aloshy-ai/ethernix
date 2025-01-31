@@ -1,8 +1,7 @@
 # ETHERNIX
 
 [![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/contributor-quickstart/)
-[![Build Status](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/aloshy-ai/YOUR_GIST_ID/raw/ethernix-junit-tests.json)](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml)
-[![Deployment Status](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/aloshy-ai/YOUR_GIST_ID/raw/ethernix-deployment.json)](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml)
+[![Build Status](https://github.com/aloshy-ai/ethernix/actions/workflows/CI.yml/badge.svg)](https://github.com/aloshy-ai/ethernix/actions/workflows/ci.yml)
 [![Apple Silicon Ready](https://img.shields.io/badge/Apple%20Silicon-Ready-success?logo=apple&logoColor=white)](https://github.com/aloshy-ai/ethernix)
 [![Platform](https://img.shields.io/badge/platform-Darwin%20%7C%20Linux-blue)](https://github.com/aloshy-ai/ethernix)
 [![Docker Support](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)](https://github.com/aloshy-ai/ethernix)

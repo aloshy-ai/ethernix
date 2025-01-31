@@ -18,7 +18,6 @@ on:
 # Security permissions
 permissions:
   contents: read
-  gists: write
 
 jobs:
   # Deployment job - only runs on main branch
@@ -31,17 +30,6 @@ jobs:
     steps:
       # Checkout repository
       - uses: actions/checkout@v4
-
-      # Build verification step
-      - name: Build check
-        run: echo "Build check passed"
-
-      # Generate CI Badges
-      - name: Generate CI Badges
-        uses: gaelgirodon/ci-badges-action@v1
-        with:
-          gist-id: ${{ secrets.GIST_ID }}
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Setup QEMU for ARM64 support
       - name: Set up QEMU
@@ -195,11 +183,3 @@ jobs:
             sleep 10
           done
           exit 1
-
-      - name: Update Deployment Badge
-        if: always()
-        uses: gaelgirodon/ci-badges-action@v1
-        with:
-          gist-id: ${{ secrets.GIST_ID }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          prefix: ethernix-deployment
