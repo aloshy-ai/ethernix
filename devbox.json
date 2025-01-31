@@ -3,8 +3,7 @@
   "packages": [
     "docker@latest",
     "mkpasswd@latest",
-    "act",
-    "go@latest"
+    "act"
   ],
   "shell": {
     "init_hook": [

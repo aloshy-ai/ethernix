@@ -280,15 +280,35 @@ jobs:
         env:
           DEVICE_ID: ${{ steps.device-info.outputs.device_id }}
         run: |
-          ACCESS_TOKEN=$(curl -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
+          TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
                              -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
-                             "$TAILSCALE_API_URL/oauth/token" | jq -r .access_token)
+                             "$TAILSCALE_API_URL/oauth/token")
+          
+          if ! echo "$TOKEN_RESPONSE" | jq empty; then
+            echo "Invalid JSON response from token endpoint"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
 
-          curl -X POST \
+          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r .access_token)
+
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain access token"
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+
+          UPDATE_RESPONSE=$(curl -s -f -X POST \
             -H "Authorization: Bearer ${ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
             -d '[]' \
-            "$TAILSCALE_API_URL/device/${DEVICE_ID}/tags"
+            "$TAILSCALE_API_URL/device/${DEVICE_ID}/tags")
+          
+          if [ $? -ne 0 ]; then
+            echo "Failed to update device tags"
+            echo "Response: $UPDATE_RESPONSE"
+            exit 1
+          fi
 
       - name: Cleanup SSH Access
         if: always()
