@@ -227,7 +227,7 @@ jobs:
           fi
 
       - name: Add CI Tag
-        if: steps.device-status.outputs.online == 'true' && steps.device-info.outputs.has_ci_tag == 'false'
+        if: steps.device-info.outputs.has_ci_tag == 'false'
         env:
           DEVICE_ID: ${{ steps.device-info.outputs.device_id }}
         run: |
@@ -276,7 +276,7 @@ jobs:
             --show-trace
 
       - name: Cleanup CI Tag
-        if: always()
+        if: steps.device-info.outputs.has_ci_tag == 'true'
         env:
           DEVICE_ID: ${{ steps.device-info.outputs.device_id }}
         run: |
