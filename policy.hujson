@@ -1,0 +1,34 @@
+// This tailnet's ACLs are maintained in GitHub
+
+{
+	"tagOwners": {
+		"tag:ci": ["autogroup:admin"]
+	},
+	"acls": [
+		{
+			"action": "accept",
+			"src": ["*"],
+			"dst": ["*:*"]
+		}
+	],
+	"ssh": [
+		{
+			"action": "check",
+			"src": ["autogroup:member"],
+			"dst": ["autogroup:self"],
+			"users": ["autogroup:nonroot", "root"]
+		},
+		{
+			"action": "accept",
+			"src": ["tag:ci"],
+			"dst": ["tag:ci"],
+			"users": ["runner"]
+		}
+	],
+	"nodeAttrs": [
+		{
+			"target": ["autogroup:member"],
+			"attr": ["funnel"]
+		}
+	]
+}

@@ -62,6 +62,7 @@ jobs:
           cachix push ethernix ./result
 
   deploy:
+    timeout-minutes: 15
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -91,77 +92,14 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:ci
 
-      - name: Configure Temporary SSH Access
-        run: |
-          TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
-                             -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
-                             "$TAILSCALE_API_URL/oauth/token")
-          
-          if ! echo "$TOKEN_RESPONSE" | jq empty; then
-            echo "Invalid JSON response from token endpoint"
-            echo "Response: $TOKEN_RESPONSE"
-            exit 1
-          fi
-
-          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r .access_token)
-
-          if [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to obtain access token"
-            echo "Response: $TOKEN_RESPONSE"
-            exit 1
-          fi
-
-          # Get current ACL and strip comments before processing
-          ACL_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            "$TAILSCALE_API_URL/tailnet/-/acl" | \
-            sed -e 's|//.*$||g' -e '/^\s*$/d' | \
-            tr -d '\n' | \
-            sed -e 's/,\s*}/}/g' -e 's/,\s*\]/]/g')
-          
-          if [ $? -ne 0 ]; then
-            echo "Failed to fetch ACL"
-            echo "Response: $ACL_RESPONSE"
-            exit 1
-          fi
-
-          if ! echo "$ACL_RESPONSE" | jq empty; then
-            echo "Invalid JSON received from ACL endpoint"
-            echo "Response: $ACL_RESPONSE"
-            exit 1
-          fi
-
-          # Process ACL updates with error checking
-          CLEANED_ACL=$(echo "$ACL_RESPONSE" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))' || exit 1)
-          
-          if [ -z "$CLEANED_ACL" ]; then
-            echo "Failed to clean ACL"
-            exit 1
-          fi
-
-          NEW_ACL=$(echo "$CLEANED_ACL" | jq -c '.ssh += [{
-            "action": "accept",
-            "src": ["tag:ci"],
-            "dst": ["tag:ci"],
-            "users": ["runner"]
-          }]' || exit 1)
-
-          if [ -z "$NEW_ACL" ]; then
-            echo "Failed to create new ACL"
-            exit 1
-          fi
-
-          # Update ACL with error checking
-          UPDATE_RESPONSE=$(curl -s -f -X POST \
-            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "$NEW_ACL" \
-            "$TAILSCALE_API_URL/tailnet/-/acl")
-          
-          if [ $? -ne 0 ]; then
-            echo "Failed to update ACL"
-            echo "Response: $UPDATE_RESPONSE"
-            exit 1
-          fi
+      - name: Update Tailscale ACLs
+        uses: tailscale/gitops-acl-action@v1
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tailnet: ${{ secrets.TAILSCALE_TAILNET }}
+          action: apply
+          policy-file: policy.hujson
 
       - name: Get Device Information
         id: device-info
@@ -237,62 +175,3 @@ jobs:
             --option extra-platforms aarch64-linux \
             --option system-features kvm \
             --show-trace
-
-      - name: Cleanup SSH Access
-        if: always()
-        run: |
-          TOKEN_RESPONSE=$(curl -s -d "client_id=${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}" \
-                             -d "client_secret=${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}" \
-                             "$TAILSCALE_API_URL/oauth/token")
-          
-          if ! echo "$TOKEN_RESPONSE" | jq empty; then
-            echo "Invalid JSON response from token endpoint"
-            echo "Response: $TOKEN_RESPONSE"
-            exit 1
-          fi
-
-          ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r .access_token)
-
-          if [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to obtain access token"
-            echo "Response: $TOKEN_RESPONSE"
-            exit 1
-          fi
-
-          # Get current ACL and strip comments before processing
-          ACL_RESPONSE=$(curl -s -f -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            "$TAILSCALE_API_URL/tailnet/-/acl" | \
-            sed -e 's|//.*$||g' -e '/^\s*$/d' | \
-            tr -d '\n' | \
-            sed -e 's/,\s*}/}/g' -e 's/,\s*\]/]/g')
-          
-          if [ $? -ne 0 ]; then
-            echo "Failed to fetch ACL"
-            echo "Response: $ACL_RESPONSE"
-            exit 1
-          fi
-
-          if ! echo "$ACL_RESPONSE" | jq empty; then
-            echo "Invalid JSON received from ACL endpoint"
-            echo "Response: $ACL_RESPONSE"
-            exit 1
-          fi
-
-          NEW_ACL=$(echo "$ACL_RESPONSE" | jq -c 'del(.ssh[] | select(.src == ["tag:ci"] and .dst == ["tag:ci"]))' || exit 1)
-
-          if [ -z "$NEW_ACL" ]; then
-            echo "Failed to create new ACL"
-            exit 1
-          fi
-
-          UPDATE_RESPONSE=$(curl -s -f -X POST \
-            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "$NEW_ACL" \
-            "$TAILSCALE_API_URL/tailnet/-/acl")
-          
-          if [ $? -ne 0 ]; then
-            echo "Failed to update ACL"
-            echo "Response: $UPDATE_RESPONSE"
-            exit 1
-          fi
