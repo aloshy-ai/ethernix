@@ -6,11 +6,6 @@
 [![Apple Silicon Ready](https://img.shields.io/badge/APPLE_SILICON-READY-success.svg?style=for-the-badge&logo=apple)](https://github.com/aloshy-ai/ethernix)
 [![License](https://img.shields.io/badge/LICENSE-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-# ETHERNIX
-
-[![Built with Devbox](https://www.jetify.com/img/devbox/shield_galaxy.svg)](https://www.jetify.com/devbox/docs/contributor-quickstart/)
-[![Docker Support](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)](https://github.com/aloshy-ai/ethernix)
-
 A NixOS image builder for Raspberry Pi 4 that provides a streamlined way to create custom NixOS images. Works natively on Apple Silicon (M1/M2/M3) Macs through Docker-based cross-compilation, ensuring seamless build experience across platforms.
 
 ## Overview
