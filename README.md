@@ -1,9 +1,9 @@
-# ethernix
+# ETHERNIX
 
 [![](https://img.shields.io/badge/aloshy.🅰🅸-000000.svg?style=for-the-badge)](https://aloshy.ai)
 [![Platform](https://img.shields.io/badge/PLATFORM-LINUX-FCC624.svg?style=for-the-badge&logo=linux)](https://github.com/aloshy-ai/ethernix)
 [![Build Status](https://img.shields.io/badge/BUILD-PASSING-success.svg?style=for-the-badge&logo=github)](https://github.com/aloshy-ai/ethernix/actions)
-[![Apple Silicon Ready](https://img.shields.io/badge/Apple%20Silicon-Ready-success?logo=apple&logoColor=white)](https://github.com/aloshy-ai/ethernix)
+[![Apple Silicon Ready](https://img.shields.io/badge/APPLE_SILICON-READY-success.svg?style=for-the-badge&logo=apple)](https://github.com/aloshy-ai/ethernix)
 [![License](https://img.shields.io/badge/LICENSE-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 # ETHERNIX
@@ -129,86 +129,4 @@ ETHERNIX simplifies the process of creating NixOS images for Raspberry Pi 4 by p
    ```
 
 6. Apply the configuration:
-   ```bash
-   sudo nixos-rebuild switch -I nixos-config=/etc/nixos/flake.nix
    ```
-
-## Default Configuration
-
-- User Account: `aloshy`
-- Network: Static IP `192.168.8.69`
-- Services: SSH enabled
-- Core Utilities: vim, wget, and essential tools
-
-## Auto-Deployment Setup
-
-ETHERNIX supports automatic deployment using GitHub Actions and Tailscale. This allows you to automatically deploy configuration changes to your Raspberry Pi when changes are pushed to the main branch.
-
-### Prerequisites
-
-1. A Tailscale account and network
-2. GitHub repository secrets configured
-3. Your Raspberry Pi connected to Tailscale
-
-### Setup Steps
-
-1. Connect your Raspberry Pi to Tailscale:
-   ```bash
-   sudo tailscale up --ssh --advertise-exit-node
-   ```
-
-2. Configure GitHub repository secrets:
-   - `TAILSCALE_OAUTH_CLIENT_ID`: Your Tailscale OAuth client ID
-   - `TAILSCALE_OAUTH_CLIENT_SECRET`: Your Tailscale OAuth client secret
-   - `TAILSCALE_TAILNET`: Your Tailscale network name
-
-3. Ensure your `configuration.nix` includes Tailscale service:
-   ```nix
-   services.tailscale = {
-     enable = true;
-     authKeyFile = "/etc/tailscale/authkey";
-     extraUpFlags = [
-       "--ssh"
-       "--advertise-exit-node"
-     ];
-   };
-
-   # Add runner user for GitHub Actions
-   users.users.runner = {
-     isNormalUser = true;
-     extraGroups = [ "wheel" ];
-   };
-   ```
-
-4. The CI workflow will:
-   - Connect to your Tailscale network
-   - Verify device connectivity
-   - Deploy configuration changes
-   - Automatically rebuild NixOS on your Raspberry Pi
-
-### Deployment Process
-
-1. Push changes to the main branch
-2. GitHub Actions will:
-   - Build and verify changes
-   - Connect to your Tailscale network
-   - Update ACL policies
-   - Deploy to devices tagged with `tag:ci`
-   - Rebuild NixOS configuration
-
-### Monitoring Deployments
-
-- Check deployment status in the GitHub Actions tab
-- Monitor Tailscale device status in your admin console
-- View deployment logs for troubleshooting
-
-### Security Considerations
-
-- The CI runner has limited permissions through Tailscale ACLs
-- Deployments only run on the main branch
-- Configuration changes require successful builds
-- Remote access is secured through Tailscale's encryption
-
-## Customization
-
-The system can be customized by modifying `
